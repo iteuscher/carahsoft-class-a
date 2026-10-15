@@ -1,0 +1,52 @@
+# FedRAMP rule index: ID -> name and link. Steps reference rules by ID only.
+# Source: FedRAMP Consolidated Rules for 2026, Class A (https://www.fedramp.gov/2026/reference/20x/a/)
+base:
+  cert: https://www.fedramp.gov/2026/reference/20x/a/fedramp-certification/
+  related: https://www.fedramp.gov/2026/reference/20x/a/related/
+  ksi: https://www.fedramp.gov/2026/reference/20x/a/key-security-indicators/
+  mkt: https://www.fedramp.gov/2026/reference/20x/a/marketplace-listing/
+  cpo: https://fedramp.gov/2026/reference/20x/a/certification-package-overview/
+  scg: https://www.fedramp.gov/2026/reference/secure-configuration-guide/
+rules:
+  FRC-CLA-ASF: { name: Approved Alternative Security Frameworks, page: cert, anchor: approved-alternative-security-frameworks }
+  FRC-CLA-EAM: { name: External Assessment Materials, page: cert, anchor: external-assessment-materials }
+  FRC-CLA-MFR: { name: Mandatory FedRAMP Rules for Class A, page: cert, anchor: mandatory-fedramp-rules-for-class-a }
+  FRC-CSO-PKG: { name: FedRAMP Certification Package, page: cert, anchor: fedramp-certification-package }
+  FRC-CSO-JSN: { name: FedRAMP JSON Schemas, page: cert }
+  FRC-CSO-POP: { name: Pick One Program Certification Type, page: cert, anchor: pick-one-program-certification-type }
+  FRC-CSO-MRA: { name: Maintain Responsibility and Accountability, page: cert, anchor: maintain-responsibility-and-accountability }
+  FRC-APP-NTP: { name: No Third-Party Applicants, page: cert, anchor: no-third-party-applicants }
+  FRC-APP-MLF: { name: Marketplace Listing First, page: cert, anchor: marketplace-listing-first }
+  FRC-APP-AFC: { name: Applying for FedRAMP Certification, page: cert, anchor: applying-for-fedramp-certification_1 }
+  FRC-APP-FCP: { name: Fresh FedRAMP Certification Package, page: cert, anchor: fresh-fedramp-certification-package }
+  MAS-CSO-IIR: { name: Identify Information Resources, page: related, anchor: identify-information-resources }
+  CDS-CSO-PUB: { name: Public Information, page: related, anchor: public-information }
+  CDS-CSO-UTC: { name: Use Trust Centers, page: related, anchor: use-trust-centers }
+  CDS-UTC-AAD: { name: Agency Access Denial, page: related, anchor: agency-access-denial }
+  CPO-CSO-OVR: { name: Overview of the Cloud Service Offering, page: related, anchor: overview-of-the-cloud-service-offering }
+  CPO-CSX-CPM: { name: Certification Package Maintenance, page: cpo }
+  SDR-CSO-FRR: { name: FedRAMP Rules (Security Decision Record), page: related, anchor: fedramp-rules }
+  AFC-CSO-INB: { name: Maintain a FedRAMP Security Inbox, page: related, anchor: maintain-a-fedramp-security-inbox }
+  AFC-CSO-RCV: { name: Receive Email Without Disruption, page: related, anchor: receive-email-without-disruption }
+  AFC-CSO-CRA: { name: Complete Required Actions, page: related, anchor: complete-required-actions }
+  IEC-CSO-EFR: { name: Evaluate FedRAMP Reportability, page: related, anchor: evaluate-fedramp-reportability }
+  IEC-CSO-FIR: { name: Final Incident Report, page: related, anchor: final-incident-report }
+  VDR-CSO-DET: { name: Vulnerability Detection, page: related, anchor: vulnerability-detection }
+  CCM-OCR-AVL: { name: Report Availability, page: related, anchor: report-availability }
+  CCM-OCR-NRD: { name: Next Report Date, page: related, anchor: next-report-date }
+  IVV-CSX-AIA: { name: Annual Independent Assessments for 20x, page: related, anchor: annual-independent-assessments-for-20x }
+  MKT-CSO-PML: { name: Provider Marketplace Listing Requests, page: mkt, anchor: provider-marketplace-listing-requests }
+  MKT-CSO-MLR: { name: Marketplace Listing Requirements, page: mkt, anchor: marketplace-listing-requirements }
+  MKT-IIP-AGU: { name: Agency Use Cases, page: mkt, anchor: agency-use-cases }
+  MKT-IIP-DCP: { name: Demonstrating Continuous Progress, page: mkt, anchor: demonstrating-continuous-progress }
+  MKT-IIP-DLA: { name: Deadline for Assessment, page: mkt, anchor: deadline-for-assessment }
+  KSI-CED-RAT: { name: Reviewing All Training, page: ksi, anchor: reviewing-all-training }
+  KSI-CMT-LMC: { name: Logging Changes, page: ksi, anchor: logging-changes }
+  KSI-CNA-RNT: { name: Restricting Network Traffic, page: ksi, anchor: restricting-network-traffic }
+  KSI-IAM-AAM: { name: Automating Account Management, page: ksi, anchor: automating-account-management }
+  KSI-IAM-APM: { name: Adopting Passwordless Methods, page: ksi, anchor: adopting-passwordless-methods }
+  KSI-INR-RIR: { name: Reviewing Incident Response Procedures, page: ksi, anchor: reviewing-incident-response-procedures }
+  KSI-SVC-SIN: { name: Securing Information, page: ksi, anchor: securing-information }
+  SCG-CSO-RSC: { name: Recommended Secure Configuration, page: scg, anchor: recommended-secure-configuration }
+  SCG-CSO-AUP: { name: Use Instructions, page: scg, anchor: use-instructions }
+  SCG-CSO-PUB: { name: Public Secure Configuration Guidance, page: scg, anchor: public-secure-configuration-guidance }

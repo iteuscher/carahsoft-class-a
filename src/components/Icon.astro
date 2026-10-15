@@ -1,0 +1,16 @@
+---
+// Inline Lucide icon (lucide-static, pinned). Decorative: hidden from assistive tech.
+import fs from 'node:fs';
+import path from 'node:path';
+interface Props { name: string; class?: string }
+const { name, class: cls } = Astro.props;
+const file = path.join(process.cwd(), 'node_modules/lucide-static/icons', `${name}.svg`);
+if (!fs.existsSync(file)) throw new Error(`Unknown Lucide icon "${name}"`);
+const svg = fs
+  .readFileSync(file, 'utf8')
+  .replace(/<!--[\s\S]*?-->/g, '')
+  .replace(/\s(width|height|class)="[^"]*"/g, '')
+  .replace('<svg', `<svg aria-hidden="true" focusable="false"${cls ? ` class="${cls}"` : ''}`)
+  .trim();
+---
+<Fragment set:html={svg} />

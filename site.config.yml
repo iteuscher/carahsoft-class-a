@@ -1,0 +1,32 @@
+# Site-wide settings. Values marked TODO must be filled before partners or clients see the site.
+title: FedRAMP 20x Class A Walkthrough
+default_partner: paramify          # build with PARTNER=<id> to theme for a partner (content/partners/<id>.yml)
+default_path: soc2                 # soc2 | govramp | rev5
+progress_storage_key: paramify-class-a-v1
+
+feedback:
+  zendesk_url: https://support.paramify.com/hc/en-us/requests/new
+  subject_prefix: "Class A Walkthrough feedback"
+  # The site prefills: step ID and title, task ID (optional), partner name. The visitor adds company and feedback.
+
+# Default Paramify contact shown in CA-04. Viewers can edit it in their browser.
+paramify_contact:
+  name: Paramify Support
+  email: support@paramify.com
+
+fedramp_forms:
+  marketplace_listing: https://help.fedramp.gov/hc/en-us/requests/new?ticket_form_id=50939227168027
+  certification_application: https://help.fedramp.gov/hc/en-us/requests/new?ticket_form_id=51137131584283
+  agency_access_denial: https://help.fedramp.gov/hc/en-us/requests/new?ticket_form_id=51829826617243
+  json_schema_validator: https://www.fedramp.gov/schemas/validator/
+  class_a_self_check: https://help.fedramp.gov/hc/en-us/articles/56860150862491-20x-Class-A-Self-Check
+  sam_entity_registration: https://sam.gov/entity-registration
+
+templates:
+  # Client-accessible template links. Internal Drive links must NOT go here.
+  cpo: TODO            # Class A Certification Package Overview template (CSM sends it today)
+  ocr: TODO            # Ongoing Certification Report template
+  incident_report: TODO  # Final (required) plus Initial and Ongoing (recommended) incident report samples
+  # Class A risk profile and risk solution preset exports, served from public/templates/ (site-relative paths get the build's base).
+  risk_profile: /templates/risk-profile-templates_20x-class-a.csv
+  risk_solution_preset: /templates/risk-solution-presets_20x-class-a.csv

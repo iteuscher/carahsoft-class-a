@@ -1,0 +1,12 @@
+id: carahsoft
+name: Carahsoft
+standalone: false
+logo: TODO                  # get files and usage rules: https://www.carahsoft.com/brand-guidelines/logo (graphicdesign@carahsoft.com)
+intro: "[Draft] Carahsoft, The Trusted Government IT Solutions Provider®, is Paramify's federal reseller partner. Carahsoft provides your Paramify subscription and will guide you through this walkthrough."
+intro_source: "Swap in Carahsoft's approved 30- or 50-word description: https://www.carahsoft.com/brand-guidelines/descriptions"
+powered_by: true            # "Powered by Paramify" footer
+contact: { name: TODO, email: TODO, booking_url: TODO }
+theme:
+  # Partner branding leads; Paramify content (blogs, videos, step-by-steps) stays Paramify-attributed.
+  # TODO: Carahsoft primary color and font per its co-branding rules: https://www.carahsoft.com/brand-guidelines/partner-co-branding
+  primary: TODO

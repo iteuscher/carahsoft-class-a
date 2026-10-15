@@ -1,0 +1,400 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Icon from '../../components/Icon.astro';
+import TaskItem from '../../components/TaskItem.astro';
+import Resources from '../../components/Resources.astro';
+import TeamTable from '../../components/TeamTable.astro';
+import CpoForm from '../../components/CpoForm.astro';
+import { loadCpo, promptFields } from '../../lib/form';
+import { loadSite, PHASES, parseDraft, renderContext, splitBody, stepHref, stepSlug, type StepData } from '../../lib/content';
+import { renderBody, inlineText } from '../../lib/markdown';
+import { href, rule } from '../../lib/site';
+
+export async function getStaticPaths() {
+  const site = await loadSite();
+  return site.steps.map((step) => ({ params: { id: stepSlug(step.id) }, props: { stepId: step.id } }));
+}
+
+const { stepId } = Astro.props as { stepId: string };
+const site = await loadSite();
+const index = site.steps.findIndex((s) => s.id === stepId);
+const step = site.steps[index] as StepData;
+const prev = site.steps[index - 1];
+const next = site.steps[index + 1];
+const ctx = await renderContext(step.id);
+const tasks = site.tasks.get(step.id) ?? [];
+// Guided steps put {{tasks: …}} and {{cpo_form}} lines in the body so each task sits next to its how-to.
+const parts = splitBody(site.bodies.get(step.id) ?? '').map((p) =>
+  p.kind === 'md' ? { ...p, html: renderBody(p.src, ctx) } : p.kind === 'tasks' ? { ...p, items: p.ids.map((id) => tasks.find((t) => t.id === id)).filter((t) => !!t) } : p,
+);
+const guided = parts.some((p) => p.kind === 'tasks');
+const formInBody = parts.some((p) => p.kind === 'cpo' || p.kind === 'cpo_tools' || p.kind === 'cpo_save');
+const recurring = site.recurring.get(step.id) ?? [];
+const phase = PHASES[step.phase];
+const partner = ctx.partner;
+
+// CA-13: the seven KSI statements, one per line, prefixed with the KSI ID.
+const ksiStatements = step.ksis.map((k) => `${k.id}: ${k.statement}`).join('\n');
+const cpo = await loadCpo();
+const promptSections = cpo.sections.filter((x) => x.prompt && step.cpo_sections.includes(x.id)).map((x) => x.id);
+const prompts = step.prompts.map((p) => ({
+  ...p,
+  text: p.text
+    .replace(/\{\{\s*ksi_statements\s*\}\}/g, ksiStatements)
+    .replace(/\{\{\s*cpo_prompt_fields\s*\}\}/g, () => promptFields(cpo, promptSections))
+    .trimEnd(),
+}));
+for (const p of prompts) {
+  const left = p.text.match(/\{\{[^}]*\}\}/);
+  if (left) throw new Error(`${step.id}: unresolved placeholder ${left[0]} in prompt "${p.title}".`);
+}
+
+// Path panel: shown on the step that holds the path-selection task (CA-03).
+const showPathPanel = step.tasks.some((t) => t.id === 'CA-03.1');
+const ksiColumns = [
+  { key: 'soc2_gap', label: 'Typical SOC 2 gap', paths: site.paths.filter((p) => p.ksiGapColumn === 'soc2_gap').map((p) => p.id) },
+  { key: 'related_controls', label: 'Related SP 800-53 controls', paths: site.paths.filter((p) => p.ksiGapColumn === 'related_controls').map((p) => p.id) },
+].filter((c) => c.paths.length);
+const multiCol = ksiColumns.length > 1;
+const draft = (s?: string) => parseDraft(s);
+const confirmNote = draft(step.form?.confirm_note);
+const readItem = site.readItems.get(step.id);
+const anyDefaultTasks = (site.progressItems.get(step.id) ?? []).length > 0;
+// The CPO form shows the prompt above its paste box when it can import an AI answer.
+const promptsInForm = step.cpo_sections.length > 0 && prompts.length > 0 && cpo.sections.some((x) => x.prompt && step.cpo_sections.includes(x.id));
+---
+<Layout title={`${step.id} ${step.title}`} description={step.summary} current={step.id}>
+  <article data-step={step.id}>
+    <header class="step-head">
+      <p class="eyebrow">{phase.label} · {phase.short}</p>
+      <h1>{step.title}</h1>
+      <div class="step-meta">
+        <span class="chip"><span class="sr-only">Step ID </span>{step.id}</span>
+        {step.optional && <span class="chip chip-info">Optional</span>}
+        {step.review === 'pending' && <span class="chip chip-draft draft-chip">Pending review</span>}
+      </div>
+      <p class="summary" set:html={inlineText(step.summary, ctx)} />
+      {anyDefaultTasks && (
+        <div class="step-progress">
+          <span id="step-progress-label">Step progress</span>
+          <div class="bar" role="progressbar" aria-labelledby="step-progress-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-step-bar={step.id}><span></span></div>
+          <span data-step-count-text={step.id}></span>
+        </div>
+      )}
+    </header>
+
+    {(guided ? step.choice : tasks.length > 0) && (
+      <section class="section" aria-labelledby={guided ? undefined : 'tasks-title'} aria-label={guided ? 'Your choice' : undefined} data-task-section={guided ? undefined : ''}>
+        {!guided && <h2 id="tasks-title">Tasks</h2>}
+        {!guided && <p class="filter-note" data-filter-note hidden></p>}
+        {step.choice && (
+          <fieldset class="choice panel">
+            <legend>{step.choice.question}</legend>
+            {step.choice.hint && <p class="ff-hint">{step.choice.hint}</p>}
+            <div class="ff-options">
+              {step.choice.options.map((o) => (
+                <label class="ff-option"><input type="radio" name={`choice-${step.choice!.id}`} value={o.id} data-choice-input={step.choice!.id} /><span>{o.label}</span></label>
+              ))}
+              <label class="ff-option"><input type="radio" name={`choice-${step.choice.id}`} value="" data-choice-input={step.choice.id} /><span>Show every option</span></label>
+            </div>
+          </fieldset>
+        )}
+        {!guided && (
+          <ul class="task-list">
+            {tasks.map((t) => <TaskItem item={t} ctx={ctx} choiceId={step.choice?.id} />)}
+          </ul>
+        )}
+        {!guided && <p class="empty-note" data-empty-note hidden>No tasks for this person or role in this step.</p>}
+      </section>
+    )}
+
+    {showPathPanel && (
+      <section class="panel" aria-labelledby="path-panel-title">
+        <h2 id="path-panel-title" class="sr-only">About your path</h2>
+        {site.paths.map((p) => (
+          <div data-paths={p.id}>
+            <h3>About your path: {p.label}</h3>
+            <p>{p.description} Change it any time in CA-03.1 above.</p>
+            {p.notes.map((n) => n.fedramp ? (
+              <figure class:list={['callout', n.review === 'pending' && 'is-draft no-marker']} style="background:#fff">
+                <figcaption>
+                  {n.url ? <a class="callout-label" href={n.url} target="_blank" rel="noopener noreferrer">FedRAMP<span class="sr-only"> (opens in a new tab)</span></a> : <span class="callout-label">FedRAMP</span>}
+                  <span class="callout-name">{n.title}</span>
+                  {n.review === 'pending' && <span class="chip chip-draft draft-chip">Pending review</span>}
+                </figcaption>
+                <blockquote cite={n.url}><p>{n.text}</p></blockquote>
+              </figure>
+            ) : (
+              <div class:list={[(n.review === 'pending' || n.draft) && 'is-draft no-marker']}>
+                <h4 style="font-size:16px;margin:16px 0 4px">{n.title} {n.review === 'pending' && <span class="chip chip-draft draft-chip">Pending review</span>}</h4>
+                <p set:html={inlineText(n.text, ctx)} />
+              </div>
+            ))}
+          </div>
+        ))}
+      </section>
+    )}
+
+
+    {step.roles.length > 0 && <TeamTable roles={step.roles} />}
+
+    {parts.map((p) =>
+      p.kind === 'md' ? (
+        p.html.trim() && <div class="section prose" set:html={p.html} />
+      ) : p.kind === 'tasks' ? (
+        <div class="guided-tasks" data-task-section>
+          <p class="filter-note" data-filter-note hidden></p>
+          <ul class="task-list">
+            {p.items.map((t) => <TaskItem item={t} ctx={ctx} choiceId={step.choice?.id} />)}
+          </ul>
+          <p class="empty-note" data-empty-note hidden>No tasks for this person or role in this section.</p>
+        </div>
+      ) : (
+        // {{cpo_tools}} places the AI import, {{cpo_save}} the Copy/Download buttons, {{cpo_form: x}} one section under its task.
+        step.cpo_sections.length > 0 && (
+          p.kind === 'cpo_save' ? <CpoForm sectionIds={step.cpo_sections} stepId={step.id} embedded mode="save" />
+          : p.kind === 'cpo_tools' ? <CpoForm sectionIds={step.cpo_sections} stepId={step.id} prompts={promptsInForm ? prompts : []} embedded mode="tools" />
+          : p.only.length ? <CpoForm sectionIds={step.cpo_sections} stepId={step.id} embedded mode="section" only={p.only} />
+          : <CpoForm sectionIds={step.cpo_sections} stepId={step.id} prompts={promptsInForm ? prompts : []} embedded />
+        )
+      ),
+    )}
+
+    {step.id === 'CA-02' && !partner.standalone && partner.contact && (
+      <section class="card contact-card" aria-labelledby="contact-title">
+        <h2 id="contact-title" style="font-size:20px">Your {partner.name} contact</h2>
+        <dl>
+          {partner.contact.name && <><dt>Name</dt><dd>{partner.contact.name}</dd></>}
+          {partner.contact.email && <><dt>Email</dt><dd><a href={`mailto:${partner.contact.email}`}>{partner.contact.email}</a></dd></>}
+          {partner.contact.booking_url && <><dt>Meet</dt><dd><a href={partner.contact.booking_url} target="_blank" rel="noopener noreferrer">Book time<span class="sr-only"> (opens in a new tab)</span></a></dd></>}
+        </dl>
+      </section>
+    )}
+
+    {step.cpo_sections.length > 0 && !formInBody && <CpoForm sectionIds={step.cpo_sections} stepId={step.id} prompts={promptsInForm ? prompts : []} />}
+
+    {step.ksis.length > 0 && (
+      <section class="section" aria-labelledby="ksi-title">
+        <h2 id="ksi-title">Required KSIs</h2>
+        <p class="section-intro">The statements are FedRAMP's wording. The last column is a common starting point for your gap review, not a finding.</p>
+        <div class="table-wrap" role="region" tabindex="0" aria-label="Table: required KSIs">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">KSI</th>
+                <th scope="col">Statement</th>
+                {ksiColumns.map((c) => <th scope="col" data-paths={multiCol ? c.paths.join(' ') : undefined}>{c.label}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {step.ksis.map((k) => {
+                const r = rule(k.id);
+                return (
+                  <tr>
+                    <td><a href={r.url} target="_blank" rel="noopener noreferrer" style="white-space:nowrap">{k.id}<span class="sr-only"> (opens in a new tab)</span></a><br /><span style="font-size:13px">{r.name}</span></td>
+                    <td>{k.statement}</td>
+                    {ksiColumns.map((c) => (
+                      <td data-paths={multiCol ? c.paths.join(' ') : undefined}>
+                        {c.key === 'soc2_gap' ? k.soc2_gap : (
+                          <a href={r.url} target="_blank" rel="noopener noreferrer">See related controls<span class="sr-only"> for {k.id} on fedramp.gov (opens in a new tab)</span></a>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )}
+
+    {step.procedures.map((proc, i) => (
+      <section class="section" aria-labelledby={`proc-${i}`}>
+        <h2 id={`proc-${i}`}>{proc.title}</h2>
+        <ol class="prose">
+          {proc.steps.map((s) => <li set:html={inlineText(s, ctx)} />)}
+        </ol>
+      </section>
+    ))}
+
+    {step.form && (
+      <section class="section" aria-labelledby="form-title">
+        <h2 id="form-title">{step.form.title}</h2>
+        <div class="table-wrap" role="region" tabindex="0" aria-label={`Table: ${step.form.title}`}>
+          <table class="form-table">
+            <thead><tr><th scope="col">Field</th><th scope="col">What to enter</th></tr></thead>
+            <tbody>
+              {step.form.fields.map((f) => {
+                const v = draft(f.value);
+                const isDraft = v.draft || f.draft || f.review === 'pending';
+                return (
+                  <tr>
+                    <td>{f.field}</td>
+                    <td>
+                      <span class:list={[isDraft && 'is-draft']} set:html={inlineText(v.text, ctx)} />
+                      {f.fedramp_note && (
+                        <figure class="fedramp-note" style="margin:10px 0 0">
+                          <figcaption class="callout-label">FedRAMP note</figcaption>
+                          <blockquote style="margin:0">{f.fedramp_note}</blockquote>
+                        </figure>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {confirmNote.text && <p class:list={['confirm-note']}><span class:list={[confirmNote.draft && 'is-draft']} set:html={inlineText(confirmNote.text, ctx)} /></p>}
+      </section>
+    )}
+
+    {step.checklists.length > 0 && (
+      <section class="section" aria-labelledby="checklists-title">
+        <h2 id="checklists-title">FedRAMP Self Check</h2>
+        <p class="section-intro">Check each item once you have verified it. FedRAMP's wording, unchanged.</p>
+        {step.checklists.map((c) => (
+          <div class="checklist" data-checklist={c.id}>
+            <h3 id={`cl-${c.id}`}>{c.title}</h3>
+            {c.source && <p class="checklist-source">Source: {c.source} · <span data-checklist-count={c.id}>0 of {c.items.length} verified</span></p>}
+            <ul class="task-list" aria-labelledby={`cl-${c.id}`}>
+              {c.items.map((item) => (
+                <li class="task" id={`task-${item.id}`}>
+                  <input type="checkbox" id={`cb-${item.id}`} data-task={item.id} data-checklist-item={c.id} />
+                  <div class="task-body">
+                    <div class="task-head">
+                      <span class="task-id">{item.id}</span>
+                      <label class="task-text" for={`cb-${item.id}`}>{item.text}</label>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </section>
+    )}
+
+    {prompts.length > 0 && !promptsInForm && (
+      <section class="section" aria-labelledby="prompts-title">
+        <h2 id="prompts-title">AI prompts</h2>
+        {prompts.map((p, i) => {
+          const pid = `prompt-${step.id}-${i}`;
+          return (
+            <div class="prompt">
+              <p class="prompt-caution" style="margin:0"><Icon name="triangle-alert" /><span><strong style="color:inherit">Before you paste:</strong> {p.caution}</span></p>
+              <details>
+                <summary>{p.title}</summary>
+                <div class="code-block">
+                  <pre id={pid} tabindex="0"><code>{p.text}</code></pre>
+                  <button type="button" class="btn btn-secondary btn-sm copy-btn" data-copy-from={pid}><Icon name="copy" />Copy prompt</button>
+                </div>
+              </details>
+            </div>
+          );
+        })}
+      </section>
+    )}
+
+    {recurring.length > 0 && (
+      <section class="section recurring" aria-labelledby="recurring-title" data-task-section>
+        <h2 id="recurring-title">Recurring responsibilities</h2>
+        <p class="filter-note" data-filter-note hidden></p>
+        <ul class="task-list">
+          {recurring.map((t) => <TaskItem item={t} ctx={ctx} checkable={false} />)}
+        </ul>
+        <p class="empty-note" data-empty-note hidden>No recurring responsibilities for this role.</p>
+      </section>
+    )}
+
+    {step.keeping_current.length > 0 && (
+      <section class="section" aria-labelledby="current-title">
+        <h2 id="current-title">Keeping your package current</h2>
+        <div class="table-wrap" role="region" tabindex="0" aria-label="Table: keeping your package current">
+          <table>
+            <thead><tr><th scope="col">When</th><th scope="col">Update</th><th scope="col">Note</th></tr></thead>
+            <tbody>
+              {step.keeping_current.map((k) => (
+                <tr class:list={[(k.draft || k.review === 'pending') && 'is-draft']}>
+                  <td>{k.when}</td><td><strong>{k.update}</strong></td><td set:html={inlineText(k.note, ctx)} />
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )}
+
+    {/* The gate can list what's done for the vendor here, so they know they don't have to do it. */}
+    {step.gate_after && (
+      <div class="gate" role="note" aria-labelledby={step.gate_done_for_you?.length ? 'gate-title' : undefined}>
+        <p class="eyebrow">Gate</p>
+        {step.gate_done_for_you?.length ? (
+          <>
+            <h2 id="gate-title" class="gate-title">Done for you by your partner or Paramify</h2>
+            <ul class="gate-list">
+              {step.gate_done_for_you.map((item) => (
+                <li><Icon name="circle-check" /><span set:html={inlineText(item, ctx)} /><span class="chip chip-done">Done for you</span></li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+        <p style="margin:0" set:html={inlineText(step.gate_after, ctx)} />
+      </div>
+    )}
+
+    {step.resources.length > 0 && <Resources resources={step.resources} />}
+
+    {step.rules.length > 0 && (
+      <section class="section" aria-labelledby="rules-title">
+        <h2 id="rules-title">FedRAMP rules in this step</h2>
+        <ul class="rule-list">
+          {step.rules.map((id) => {
+            const r = rule(id);
+            return (
+              <li>
+                <a class="rule-chip" href={r.url} target="_blank" rel="noopener noreferrer">{r.id}<span class="sr-only"> (opens in a new tab)</span></a>
+                <span>{r.name}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    )}
+
+    {readItem && (
+      <section class="section read-step" aria-labelledby="read-title" data-paths={readItem.paths.length < site.paths.length ? readItem.paths.join(' ') : undefined}>
+        <h2 id="read-title">Done with this step?</h2>
+        <ul class="task-list">
+          <li class="task" id={`task-${readItem.id}`}>
+            <input type="checkbox" id={`cb-${readItem.id}`} data-task={readItem.id} aria-describedby={`dw-${readItem.id}`} />
+            <div class="task-body">
+              <div class="task-head">
+                <label class="task-text" for={`cb-${readItem.id}`}>I've read this step</label>
+              </div>
+              <p class="task-done-when" id={`dw-${readItem.id}`}><b>Done when:</b> You've read the page and know who to ask if anything is unclear.</p>
+            </div>
+          </li>
+        </ul>
+      </section>
+    )}
+
+    <footer class="step-footer">
+      <div class="feedback-row">
+        <p>Something unclear or out of date on this step?</p>
+        <button type="button" class="btn btn-secondary" data-feedback-open data-step-id={step.id} data-step-title={step.title}>
+          <Icon name="message-square" />Send feedback
+        </button>
+      </div>
+      <nav class="pager" aria-label="Previous and next step">
+        {prev && (
+          <a href={href(stepHref(prev.id))} rel="prev"><span class="dir">Previous</span>{prev.id} {prev.title}</a>
+        )}
+        {next && (
+          <a class="next" href={href(stepHref(next.id))} rel="next"><span class="dir">Next</span>{next.id} {next.title}</a>
+        )}
+      </nav>
+    </footer>
+  </article>
+</Layout>

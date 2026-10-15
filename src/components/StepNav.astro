@@ -1,0 +1,58 @@
+---
+import Icon from './Icon.astro';
+import { loadSite, PHASES, stepHref } from '../lib/content';
+import { href } from '../lib/site';
+
+interface Props { current?: string }
+const { current } = Astro.props;
+const site = await loadSite();
+const phases = [1, 2, 3].map((n) => ({ n, ...PHASES[n], steps: site.steps.filter((s) => s.phase === n) }));
+const countFor = (id: string) => (site.progressItems.get(id) ?? []).filter((t) => t.paths.includes(site.defaultPath)).length;
+---
+<nav id="step-nav" class="step-nav" aria-label="Steps">
+  <div class="nav-close">
+    <button type="button" class="icon-btn" data-nav-close aria-label="Close steps menu"><Icon name="x" /></button>
+  </div>
+  <div class="overall">
+    <div class="overall-label">
+      <span id="overall-label">Overall progress</span>
+      <span data-overall-count>0 of 0</span>
+    </div>
+    <div class="bar" role="progressbar" aria-labelledby="overall-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-overall-bar><span></span></div>
+  </div>
+  <div class="nav-extra nav-top">
+    <a href={href('')} aria-current={current === 'home' ? 'page' : undefined}><Icon name="map" />Overview</a>
+  </div>
+  {phases.map((phase) => (
+    <div class="nav-phase">
+      <p class="eyebrow" id={`nav-phase-${phase.n}`}>{phase.label} · {phase.short}</p>
+      <ul class="nav-list" aria-labelledby={`nav-phase-${phase.n}`}>
+        {phase.steps.map((s) => (
+          <li>
+            <a
+              class="nav-link"
+              href={href(stepHref(s.id))}
+              aria-current={s.id === current ? 'page' : undefined}
+              data-step-link={s.id}
+            >
+              <span class="nav-status" data-step-status={s.id} data-state="none"><Icon name="check" /></span>
+              <span>
+                <span class="nav-id">{s.id}</span>
+                <span class="nav-title">{s.title}</span>
+                <span class="sr-only" data-step-sr={s.id}></span>
+              </span>
+              <span class="nav-count" data-step-count={s.id} aria-hidden="true">{countFor(s.id) ? `0/${countFor(s.id)}` : ''}</span>
+            </a>
+            {s.gate_after && (
+              <div class="nav-gate"><strong>Gate</strong>{s.gate_after}</div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))}
+  <div class="nav-extra">
+    <a href={href('workshop/')} aria-current={current === 'workshop' ? 'page' : undefined}><Icon name="calendar-clock" />Workshop: do ahead</a>
+  </div>
+</nav>
+<div class="nav-scrim" data-nav-close></div>

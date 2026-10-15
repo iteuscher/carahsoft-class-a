@@ -1,0 +1,58 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+import { loadSite, PHASES, renderContext, stepHref } from '../lib/content';
+import { href } from '../lib/site';
+
+const site = await loadSite();
+const ctx = await renderContext('home');
+const partner = ctx.partner;
+const first = site.steps[0];
+const range = (n: number) => {
+  const steps = site.steps.filter((s) => s.phase === n);
+  const [a, b] = [steps[0].id, steps[steps.length - 1].id];
+  return a === b ? a : `${a} to ${b}`;
+};
+const PHASE_TEXT: Record<number, string> = {
+  1: 'Get ready before you have a Paramify workspace: build your team, confirm you qualify, and gather what you need. It ends when your workspace is set up.',
+  2: 'Build your package in Paramify and submit it to FedRAMP.',
+  3: 'Keep your certification current after you submit.',
+};
+---
+<Layout title="Overview" description="Walk from your existing SOC 2, GovRAMP, or Rev5 assessment to a submitted FedRAMP 20x Class A certification with Paramify." current="home">
+  <section class="home-hero">
+    <p class="eyebrow" style="margin-bottom:12px">FedRAMP 20x · Class A</p>
+    <h1>Welcome to Paramify's Class A Walkthrough</h1>
+    <p class="lead" style="margin-top:16px">
+      This guide takes you from the assessment you already have to a submitted FedRAMP 20x Class A certification, one step at a time.
+      {!partner.standalone && <> {partner.name} guides you along the way; you submit.</>}
+    </p>
+  </section>
+
+  <section class="home-section" aria-labelledby="how-it-works">
+    <h2 id="how-it-works">How it works</h2>
+    <p>The steps are in the menu on the left. Work through them in order. Each one lists its tasks, who does them, and how you know you're done.</p>
+    <dl class="phase-list">
+      {[1, 2, 3].map((n) => (
+        <div>
+          <dt><span class="eyebrow">{PHASES[n].label} · {range(n)}</span></dt>
+          <dd>{PHASE_TEXT[n]}</dd>
+        </div>
+      ))}
+    </dl>
+  </section>
+
+  <section class="home-section" aria-labelledby="good-to-know">
+    <h2 id="good-to-know">Good to know</h2>
+    <ul>
+      <li>Your progress is saved in this browser. It isn't shared with your team or with Paramify.</li>
+      <li>To see only one role's tasks, use the Show menu at the top of the page.</li>
+      <li>Planning a one-day working session? "Workshop: do ahead" in the menu lists the tasks to finish beforehand.</li>
+      <li>If something is unclear, use "Send feedback" at the bottom of any step.</li>
+    </ul>
+  </section>
+
+  <div class="home-actions">
+    <a class="btn btn-primary" href={href(stepHref(first.id))}>Start with {first.id}<Icon name="arrow-right" /></a>
+  </div>
+</Layout>

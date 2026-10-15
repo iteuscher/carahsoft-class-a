@@ -1,0 +1,26 @@
+id: rev5
+label: FedRAMP Rev5 (including Ready)
+inherits: govramp
+description: A FedRAMP Rev5 authorization or FedRAMP Ready designation at any historical impact level, within the past 12 months.
+fedramp_rule:
+  id: FRC-CLA-EAM
+  text: "2. FedRAMP Ready: Readiness Assessment Report, Security Assessment Plan, and any other materials required by FedRAMP."
+overrides:
+  CA-11.1: { text: "Confirm sharing terms for your FedRAMP materials", draft: true }
+  CA-11.7: { text: "Create an evidence set for your assessment materials, named for your assessment (for example, FedRAMP Rev5 2026)", draft: true }
+  # Same fix as CA-11.3: there's nowhere to "mark not applicable", so check the box instead.
+  CA-11.4: { text: "Upload any other materials required by FedRAMP", done_when: "Uploaded, or you've confirmed you don't need any. If you don't, just check this box." }
+  CA-17.7: { text: "Keep your FedRAMP assessment current", draft: true }
+show: [CA-03.5]
+notes:
+  - title: "Rev5 authorized, not Ready"
+    text: "Supply your SSP and SAR. FRC-CLA-EAM does not list materials for this case, so confirm with the FedRAMP PMO."
+    review: pending   # assumption, confirm before launch
+  - title: "FedRAMP Ready holders: convert soon"
+    fedramp: true
+    text: "FedRAMP Ready Conversion: Providers with FedRAMP Rev5 Ready status MUST convert to a FedRAMP Certification by whichever of the follow dates is later: the expiration of their annual assessment or November 17, 2026 (the legacy FedRAMP Ready status will be entirely removed on December 31, 2027). The simplest conversion in most cases would be to a FedRAMP 20x Class A Certification. Cloud services that do not wish to convert or do not meet conversion criteria will be renamed Legacy FedRAMP Ready and otherwise retired from FedRAMP Ready."
+    url: https://www.fedramp.gov/2026/reference/rev5/d/fedramp-certification/
+    review: pending   # Isaac to approve wording
+  - title: "Ready holders already on the Marketplace"
+    text: "The 20x application form says Class, Type or Pilot status changes for an existing service can use current Marketplace listing, so CA-07 may not apply to you. The FedRAMP Forms dropdown's Rev5 Ready Conversion Form covers Class B or C only; Class A conversions use the 20x Certification Application Form (CA-16)."
+    review: pending   # confirm with FedRAMP

@@ -1,0 +1,117 @@
+---
+// The CPO form sections that belong to one step. Answers are shared across steps (one form).
+import Icon from './Icon.astro';
+import CpoItems from './CpoItems.astro';
+import { loadCpo } from '../lib/form';
+import { isField, isHeading, type Item } from '../lib/form-logic';
+
+// prompts: shown inside the AI import block so the prompt sits right above the paste box.
+// embedded: the step body already gives this form a section heading, so skip the h2.
+// mode: 'full' renders everything; 'tools' only the intro, copy/download, and AI import;
+// 'section' only the sections in `only`, under a heading the step body supplies;
+// 'save' only the Copy/Download buttons. The buttons sit at the end of the form so they're there when you finish.
+interface Props {
+  sectionIds: string[];
+  stepId: string;
+  prompts?: { title: string; caution: string; text: string }[];
+  embedded?: boolean;
+  mode?: 'full' | 'tools' | 'section' | 'save';
+  only?: string[];
+}
+const { sectionIds, stepId, prompts = [], embedded = false, mode = 'full', only = [] } = Astro.props;
+const form = await loadCpo();
+const sections = form.sections.filter((s) => sectionIds.includes(s.id));
+const shown = mode === 'tools' || mode === 'save' ? [] : mode === 'section' ? sections.filter((s) => only.includes(s.id)) : sections;
+const showTools = mode === 'full' || mode === 'tools';
+const showSave = mode === 'full' || mode === 'save';
+// Fields filled in a later step go in a collapsed group at the end of their section. A subheading
+// goes with whichever group has fields under it, so it can appear in both.
+const split = (items: Item[]) => {
+  const now: Item[] = [];
+  const later: Item[] = [];
+  let heading: Item | null = null;
+  let headNow = false;
+  let headLater = false;
+  for (const item of items) {
+    if (isHeading(item)) { heading = item; headNow = headLater = false; continue; }
+    const isLater = isField(item) && Boolean(item.later);
+    if (heading && isLater && !headLater) { later.push(heading); headLater = true; }
+    if (heading && !isLater && !headNow) { now.push(heading); headNow = true; }
+    (isLater ? later : now).push(item);
+  }
+  return { now, later, steps: [...new Set(later.filter(isField).map((f) => f.later))] };
+};
+const otherSteps = [...new Set(form.sections.filter((s) => !sectionIds.includes(s.id)).map((s) => s.step))];
+const canImport = sections.some((s) => s.prompt);
+---
+<section class:list={['cpo', mode === 'section' || mode === 'save' ? 'cpo-part' : 'section']} aria-labelledby={embedded ? undefined : 'cpo-title'} aria-label={embedded ? (mode === 'section' ? `${shown.map((s) => s.title).join(', ')} form` : mode === 'save' ? 'Save your CPO answers' : 'Certification Package Overview form') : undefined} data-cpo-form data-sections={sectionIds.join(',')}>
+  {!embedded && <h2 id="cpo-title">Your Certification Package Overview</h2>}
+  {showTools && (<>
+  <p class="section-intro">
+    Sections {sections.map((s) => s.number).join(', ')} of the Class A CPO template.
+    {otherSteps.length > 0 && <>The rest are in {otherSteps.join(' and ')}. </>}
+    Fields marked <span class="req">*</span> are required. Your answers are saved in this browser as you type.
+  </p>
+
+  {canImport && (
+    <details class="cpo-import">
+      <summary>Fill the form from an AI answer</summary>
+      {prompts.length > 0 ? (
+        <>
+          <p><strong>1. Copy the prompt</strong> and run it in your AI tool with your website and product copy.</p>
+          {prompts.map((p, i) => {
+            const pid = `prompt-${stepId}-${i}`;
+            return (
+              <div class="prompt">
+                <p class="prompt-caution" style="margin:0"><Icon name="triangle-alert" /><span><strong style="color:inherit">Before you paste:</strong> {p.caution}</span></p>
+                <div class="code-block">
+                  <pre id={pid} tabindex="0" aria-label={p.title}><code>{p.text}</code></pre>
+                  <button type="button" class="btn btn-secondary btn-sm copy-btn" data-copy-from={pid}><Icon name="copy" />Copy prompt</button>
+                </div>
+              </div>
+            );
+          })}
+          <p><strong>2. Paste the whole answer here.</strong> Lines marked MISSING are skipped. Check every filled field before you rely on it.</p>
+        </>
+      ) : (
+        <p>Run the prompt in "AI prompts" on this page, then paste the whole answer here. Lines marked MISSING are skipped. Check every filled field before you rely on it.</p>
+      )}
+      <label class="ff-label" for={`cpo-import-${stepId}`}>Paste the AI's answer</label>
+      <textarea id={`cpo-import-${stepId}`} rows="8" data-cpo-import-text spellcheck="false"></textarea>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-primary btn-sm" data-cpo-import>Fill the form</button>
+      </div>
+      <div class="cpo-import-result" role="status" data-cpo-import-result></div>
+    </details>
+  )}
+  </>)}
+
+  {shown.map((s) => {
+    const { now, later, steps } = split(s.items);
+    const nLater = later.filter(isField).length;
+    return (
+      <section class="cpo-section" aria-labelledby={mode === 'section' ? undefined : `cpo-s-${s.id}`} aria-label={mode === 'section' ? s.title : undefined} data-cpo-section={s.id}>
+        <div class="cpo-section-head">
+          {mode !== 'section' && <h3 id={`cpo-s-${s.id}`}>{s.number}. {s.title}{s.optional && <span class="chip chip-info cpo-optional">Optional</span>}</h3>}
+          <p class="cpo-status" data-section-status={s.id}></p>
+        </div>
+        {s.intro && <p class="ff-hint">{s.intro}</p>}
+        <CpoItems items={now} />
+        {nLater > 0 && (
+          <details class="cpo-later">
+            <summary>{nLater} {nLater === 1 ? 'field' : 'fields'} you'll fill in later ({steps.join(', ')})</summary>
+            <p class="ff-hint">You don't need these yet. They're here so you can see what's coming.</p>
+            <CpoItems items={later} />
+          </details>
+        )}
+      </section>
+    );
+  })}
+  {showSave && (<>
+    <div class="cpo-toolbar">
+      <button type="button" class="btn btn-secondary btn-sm" data-cpo-copy><Icon name="copy" />Copy all answers</button>
+      <button type="button" class="btn btn-secondary btn-sm" data-cpo-download><Icon name="file-down" />Download (.txt)</button>
+    </div>
+    <p class="sr-only" role="status" data-cpo-toolbar-status></p>
+  </>)}
+</section>

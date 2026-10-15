@@ -1,0 +1,44 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import YAML from 'yaml';
+import Layout from '../layouts/Layout.astro';
+import TaskItem from '../components/TaskItem.astro';
+import { loadSite, renderContext, stepHref } from '../lib/content';
+import { renderSnippet } from '../lib/markdown';
+import { href } from '../lib/site';
+
+const raw = fs.readFileSync(path.join(process.cwd(), 'content/workshop.md'), 'utf8');
+const m = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+if (!m) throw new Error('content/workshop.md needs YAML frontmatter (title, summary).');
+const fm = YAML.parse(m[1]) as { title: string; summary?: string };
+if (!fm.title) throw new Error('content/workshop.md frontmatter needs a title.');
+
+const site = await loadSite();
+const ctx = await renderContext('workshop');
+const intro = renderSnippet(m[2], ctx);
+const groups = site.steps
+  .map((s) => ({ step: s, tasks: (site.tasks.get(s.id) ?? []).filter((t) => (t.raw as any).ahead === true) }))
+  .filter((g) => g.tasks.length);
+const total = groups.reduce((n, g) => n + g.tasks.length, 0);
+---
+<Layout title="Workshop: do ahead" description={fm.summary} current="workshop">
+  <header class="step-head">
+    <p class="eyebrow">Workshop view · {total} tasks to do ahead</p>
+    <h1>{fm.title}</h1>
+    {fm.summary && <p class="summary" style="margin-top:12px">{fm.summary}</p>}
+  </header>
+  <div class="prose" set:html={intro} />
+
+  {groups.map((g) => (
+    <section class="section" aria-labelledby={`ws-${g.step.id}`} data-task-section>
+      <p class="eyebrow">{g.step.id}</p>
+      <h2 id={`ws-${g.step.id}`}><a href={href(stepHref(g.step.id))} style="color:inherit">{g.step.title}</a></h2>
+      <p class="filter-note" data-filter-note hidden></p>
+      <ul class="task-list" style="margin-top:12px">
+        {g.tasks.map((t) => <TaskItem item={t} ctx={ctx} showAhead={false} choiceId={g.step.choice?.id} />)}
+      </ul>
+      <p class="empty-note" data-empty-note hidden>No do-ahead tasks for this role and path in this step.</p>
+    </section>
+  ))}
+</Layout>

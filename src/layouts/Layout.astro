@@ -1,0 +1,168 @@
+---
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '../styles/global.css';
+import Icon from '../components/Icon.astro';
+import StepNav from '../components/StepNav.astro';
+import FeedbackDialog from '../components/FeedbackDialog.astro';
+import { ROLES } from '../content.config';
+import { config, getPartner, href } from '../lib/site';
+import { loadSite } from '../lib/content';
+import { loadCpo } from '../lib/form';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: string; // step ID, 'home', or 'workshop'
+}
+const { title, description, current } = Astro.props;
+const site = await loadSite();
+const partner = await getPartner();
+const paramifyLogo = href('brand/paramify-logo-blue-trimmed.png');
+const LOGO_RATIO = 1145 / 263; // trimmed Paramify lockup
+const logoSrc = href(partner.logo);
+const fullTitle = `${title} | ${config.title}`;
+
+if (partner.primary && !/^#[0-9a-f]{3,8}$/i.test(partner.primary)) {
+  throw new Error(`Partner ${partner.id}: theme.primary must be a hex color, got "${partner.primary}".`);
+}
+
+// Path and platform-choice filters are pure CSS keyed off <html> attributes, so the right tasks
+// show before any script runs. The Show filter's rule is written by the head script below.
+const choices = site.steps.filter((s) => s.choice).map((s) => s.choice!);
+const filterCss = [
+  ...site.paths.map((p) => `html[data-path="${p.id}"] [data-paths]:not([data-paths~="${p.id}"]){display:none!important}`),
+  ...choices.flatMap((c) =>
+    c.options.map((o) => `html[data-choice-${c.id}="${o.id}"] [data-choice="${c.id}"]:not([data-variant="${o.id}"]){display:none!important}`),
+  ),
+  partner.primary ? `:root{--primary:${partner.primary}}` : '',
+].join('\n');
+
+const cspRoles = site.steps.flatMap((s) => s.roles.map((r) => r.id));
+
+const manifest = {
+  storageKey: config.progress_storage_key,
+  paths: site.paths.map((p) => ({ id: p.id, label: p.label })),
+  defaultPath: site.defaultPath,
+  roles: ROLES,
+  cspRoles,
+  steps: site.steps.map((s) => ({
+    id: s.id,
+    title: s.title,
+    tasks: site.progressItems.get(s.id) ?? [],
+  })),
+  choices: choices.map((c) => ({ id: c.id, options: c.options })),
+  cpo: await loadCpo(),
+  teamDefaults: {
+    partner: partner.standalone ? {} : { ...(partner.contact ?? {}), phone: undefined },
+    paramify: config.paramify_contact ?? {},
+    partnerName: partner.name,
+    standalone: partner.standalone,
+  },
+};
+const prefsBoot = {
+  key: config.progress_storage_key,
+  paths: manifest.paths.map((p) => p.id),
+  roles: ROLES,
+  choices: choices.map((c) => ({ id: c.id, options: c.options.map((o) => o.id) })),
+};
+---
+<!doctype html>
+<html lang="en" data-path={site.defaultPath}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <link rel="icon" type="image/png" href={href('brand/favicon.png')} />
+    <style is:inline id="show-style"></style>
+    <script is:inline define:vars={{ boot: prefsBoot }}>
+      (function () {
+        var d = document.documentElement;
+        try {
+          var p = JSON.parse(localStorage.getItem(boot.key + ':prefs') || '{}');
+          if (p.path && boot.paths.indexOf(p.path) > -1) d.setAttribute('data-path', p.path);
+          var c = p.choices || {};
+          boot.choices.forEach(function (ch) {
+            if (ch.options.indexOf(c[ch.id]) > -1) d.setAttribute('data-choice-' + ch.id, c[ch.id]);
+          });
+          var roles = (p.showRoles || []).filter(function (r) { return boot.roles.indexOf(r) > -1; });
+          if (roles.length) {
+            document.getElementById('show-style').textContent =
+              '[data-roles]' + roles.map(function (r) { return ':not([data-roles~="' + r + '"])'; }).join('') + '{display:none!important}';
+          }
+        } catch (e) {}
+        var q = null;
+        try { q = new URLSearchParams(location.search).get('review'); } catch (e) {}
+        var on = q === '1';
+        try {
+          if (q === '1') sessionStorage.setItem(boot.key + ':review', '1');
+          else if (q === '0') sessionStorage.removeItem(boot.key + ':review');
+          else on = sessionStorage.getItem(boot.key + ':review') === '1';
+        } catch (e) {}
+        if (on) d.classList.add('review');
+      })();
+    </script>
+    <style is:inline set:html={filterCss}></style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="review-banner" role="status">
+      Review mode: draft and pending items are highlighted. <a href="?review=0">Turn off</a>
+    </div>
+    <header class="site-header">
+      <div class="header-inner">
+        <button type="button" class="icon-btn nav-toggle" aria-controls="step-nav" aria-expanded="false" data-nav-toggle>
+          <Icon name="menu" /><span class="sr-only">Steps menu</span>
+        </button>
+        <a class="brand" href={href('')}>
+          {logoSrc.includes('paramify-logo') ? (
+            <img src={logoSrc} alt="Paramify" width={Math.round(26 * LOGO_RATIO)} height="26" />
+          ) : (
+            <img src={logoSrc} alt={partner.name} />
+          )}
+          {partner.logoIsFallback && !partner.standalone && <span class="brand-partner">{partner.name}</span>}
+          <span class="brand-title">{config.title}</span>
+        </a>
+        <div class="header-tools">
+          <div class="field-inline">
+            <label for="show-select">Show</label>
+            <select id="show-select" data-show-select>
+              <option value="all" selected>All tasks</option>
+              <optgroup label="Roles">
+                {ROLES.map((r) => <option value={`role:${r}`}>{r}</option>)}
+              </optgroup>
+            </select>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div class="shell">
+      <StepNav current={current} />
+      <main id="main" tabindex="-1">
+        <div class="content">
+          <slot />
+        </div>
+      </main>
+    </div>
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <p style="margin:0">Your progress is saved in this browser only. No accounts, no tracking.</p>
+        {partner.poweredBy ? (
+          <span class="powered">Powered by <img src={paramifyLogo} alt="Paramify" width={Math.round(18 * LOGO_RATIO)} height="18" /></span>
+        ) : (
+          <span>Software, videos, and walkthrough by Paramify.</span>
+        )}
+      </div>
+    </footer>
+    <FeedbackDialog />
+    <div class="sr-only" aria-live="polite" data-live></div>
+    <script type="application/json" id="site-manifest" set:html={JSON.stringify(manifest)}></script>
+    <script>
+      import '../scripts/app.ts';
+    </script>
+  </body>
+</html>

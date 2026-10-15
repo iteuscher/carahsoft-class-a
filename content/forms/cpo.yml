@@ -1,0 +1,549 @@
+# Certification Package Overview (CPO) form, from the Class A template (FRC-CSO-PKG, Sep 14, 2026).
+# Allowed values for service model, deployment model, and business categories match FedRAMP's schema:
+# https://fedramp.gov/schemas/fedramp-certification-package-overview-schema-2026-06-24.json
+#
+# Each section names the step where it is filled in. Field keys:
+#   type: text | textarea | url | email | tel | date | select | radio | checkboxes | fixed
+#   required, required_if {field, equals}, show_if {field, equals}, later (step ID: filled in later,
+#   not counted until then), pattern + pattern_hint, max (checkboxes), max_age_months (dates),
+#   default, preview (image preview for URLs), prompt_hint (format note for the AI prompt).
+# Answers are saved in the viewer's browser only. Never rename a field id (saved answers use it).
+id: cpo
+title: Certification Package Overview
+sections:
+  - id: identification
+    number: 1
+    title: Service Identification
+    step: CA-06
+    prompt: true
+    items:
+      - id: package_id
+        label: FedRAMP Package ID
+        type: text
+        required: true
+        later: CA-07
+        placeholder: e.g. FR2024000123
+        hint: FedRAMP assigns this after your Marketplace listing request (CA-07). Leave it blank until then.
+        prompt_hint: Write MISSING; FedRAMP assigns it later. Format when known, e.g. FR2024000123
+      - id: uei_number
+        label: UEI Number
+        type: text
+        placeholder: e.g. ABCD1234EFG5
+        hint: Your SAM.gov Unique Entity ID. Leave blank if you don't have one yet.
+        pattern: "^[A-Za-z0-9]{12}$"
+        pattern_hint: A UEI is 12 letters and numbers.
+        prompt_hint: 12 letters and numbers from SAM.gov; MISSING if not stated
+      - id: provider_name
+        label: Provider Name
+        type: text
+        required: true
+        placeholder: e.g. Microsoft, Adobe
+        hint: Your company, the cloud service provider (CSP).
+        prompt_hint: The company name, e.g. Microsoft or Adobe
+      - id: service_name
+        label: Service Name
+        type: text
+        required: true
+        placeholder: e.g. Office 365, Creative Cloud
+        hint: Full name of the cloud service offering (CSO), as you market it to agencies.
+        prompt_hint: Full name of the cloud service offering, e.g. Office 365 or Creative Cloud
+      - id: service_acronym
+        label: Service Acronym
+        type: text
+        required: true
+        placeholder: e.g. ACME-CSP
+        prompt_hint: Short acronym, e.g. ACME-CSP
+      - id: service_description
+        label: Service Description
+        type: textarea
+        required: true
+        hint: What the offering does and who uses it. Markdown formatting supported.
+        prompt_hint: Under 150 words, plain sentences; Markdown allowed
+      - id: certification_type
+        label: Certification Type
+        type: fixed
+        default: 20x
+      - id: certification_class
+        label: Certification Class
+        type: fixed
+        default: A
+      - id: certification_path
+        label: Certification Path
+        type: select
+        required: true
+        options: [Program, Agency]
+        default: Program
+        hint: Program for a FedRAMP 20x Class A certification through the FedRAMP program.
+        prompt_hint: Use Program unless the material says otherwise
+      - id: website
+        label: Website
+        type: url
+        required: true
+        placeholder: https://
+        hint: Official website for the offering.
+        prompt_hint: Full URL starting with https://
+      - id: logo_url
+        label: Logo URL
+        type: url
+        required: true
+        placeholder: https://www.example.com/logo.png
+        preview: true
+        pattern: "\\.(png|jpe?g|gif|svg|webp|ico|bmp|tiff?)([?#].*)?$"
+        pattern_hint: The link must end in .png, .jpg, .gif, .svg, .webp, .ico, .bmp, or .tiff.
+        hint: A direct link to the image file itself, so opening it shows only the logo. Not a web page that contains the logo. Use a version that shows on a white background, not a fully transparent or white-on-transparent file.
+        prompt_hint: Direct image URL ending in .png/.jpg/.gif/.svg/.webp/.ico/.bmp/.tiff; MISSING if not found
+
+  - id: properties
+    number: 2
+    title: Service Properties
+    step: CA-06
+    prompt: true
+    items:
+      - id: service_models
+        label: Service Model(s)
+        type: checkboxes
+        required: true
+        options: [SaaS, PaaS, IaaS]
+        hint: Check all that apply.
+      - id: deployment_model
+        label: Deployment Model
+        type: radio
+        required: true
+        options: [Public Cloud, Government-Only Cloud, Hybrid Cloud, Community Cloud, Government Community Cloud]
+        hint: Check one.
+      - id: business_categories
+        label: Business Categories
+        type: checkboxes
+        max: 10
+        hint: Check up to 10 from FedRAMP's list.
+        options:
+          - Accounting
+          - Analytics
+          - Artificial Intelligence (AI)
+          - Collaboration
+          - Communication
+          - Construction
+          - Contact Center
+          - Content Management System (CMS)
+          - Customer Relations Management (CRM)
+          - Customer Service
+          - Cybersecurity & Risk Management
+          - Data Management
+          - Design & Multimedia
+          - Development Tools
+          - Education & Training
+          - Finance
+          - Fleet Management
+          - Governance, Risk, and Compliance (GRC)
+          - Grant Management
+          - Health & Wellness
+          - Human Resources
+          - Law Enforcement
+          - Learning Management
+          - Legal & Policy
+          - Marketing & Sales
+          - Media
+          - Mobile Device Management (MDM)
+          - Network Management
+          - Operations Management
+          - Research
+          - Storage
+          - System Administration
+          - Talent Development
+          - Talent Management
+          - Travel Management
+          - Virtual Private Network (VPN)
+      - heading: Repository / Trust Center
+      - id: trust_center_url
+        label: Trust Center URL
+        type: url
+        required: true
+        later: CA-15
+        rule: CDS-CSO-UTC
+        placeholder: https://trust.paramify.com/your-slug
+        hint: Your Paramify Trust Center landing page. Paramify sets it up in CA-15.
+        prompt_hint: Write MISSING; set up later
+      - id: trust_center_auth
+        label: Authentication Required?
+        type: radio
+        required: true
+        later: CA-15
+        options: ["Yes", "No"]
+        hint: Yes if any files are Restricted, such as your SDR and SOC 2 materials.
+        prompt_hint: Write MISSING; decided later
+      - id: trust_center_access
+        label: Access Instructions
+        type: textarea
+        required_if: { field: trust_center_auth, equals: "Yes" }
+        later: CA-15
+        hint: How FedRAMP and agencies request access. Required if authentication is required. Markdown supported.
+        prompt_hint: Write MISSING; written later
+      - id: secure_config_url
+        label: Secure Configuration Guidance URL
+        type: url
+        required: true
+        rule: SCG-CSO-RSC
+        placeholder: https://
+        # Pointed the hint at CA-06's renamed section 2 heading.
+        hint: Public link to your Secure Configuration Guide. See "Link or write your Secure Configuration Guide" on this page.
+        prompt_hint: Full URL to admin or security configuration documentation; MISSING if not found
+      - id: agency_access_denial
+        label: Agency Access Denial Process
+        type: textarea
+        required: true
+        later: CA-15
+        rule: CDS-UTC-AAD
+        hint: How you notify FedRAMP within 5 business days when you deny an agency's access request.
+        prompt_hint: Write MISSING; written later
+      - id: additional_repos
+        label: Additional Repositories
+        type: textarea
+        hint: Repository URLs and notes, one per line.
+        prompt_hint: One URL and note per line; MISSING if none
+      - heading: Dates
+      - id: next_ocr_date
+        label: Next Ongoing Certification Report Date
+        type: date
+        required: true
+        later: CA-15
+        rule: CCM-OCR-NRD
+        prompt_hint: Write MISSING; set later (YYYY-MM-DD)
+      - id: ocr_location
+        label: Ongoing Certification Report Location
+        type: text
+        required: true
+        later: CA-15
+        rule: CCM-OCR-AVL
+        placeholder: e.g. your Trust Center URL
+        prompt_hint: Write MISSING; set later
+
+  - id: contacts
+    number: 3
+    title: Contact Information
+    step: CA-06
+    prompt: true
+    items:
+      - id: fedramp_security_inbox
+        label: FedRAMP Security Inbox
+        type: email
+        required: true
+        rule: AFC-CSO-INB
+        placeholder: fedramp@yourcompany.com
+        hint: The shared inbox you set up in CA-05.
+        prompt_hint: Email address; MISSING if not stated
+      - id: security_contact_name
+        label: Security Contact Name
+        type: text
+        placeholder: e.g. Security Team
+        hint: A team or role name is fine.
+        prompt_hint: Team or person name; MISSING if not stated
+      - id: security_contact_email
+        label: Security Contact Email
+        type: email
+        required: true
+        placeholder: security@yourcompany.com
+        hint: A group address for your security team, not one person's inbox.
+        prompt_hint: Group email address; MISSING if not stated
+      - id: security_contact_phone
+        label: Security Contact Phone
+        type: tel
+        placeholder: 202-555-0123
+        pattern: "^[0-9]{3}-[0-9]{3}-[0-9]{4}$"
+        pattern_hint: Use the ###-###-#### format, e.g. 202-555-0123.
+        prompt_hint: "###-###-#### format; MISSING if not stated"
+      - id: sales_contact_name
+        label: Sales Contact Name
+        type: text
+        placeholder: e.g. Federal Sales
+        hint: A team or role name is fine.
+        prompt_hint: Team or person name; MISSING if not stated
+      - id: sales_contact_email
+        label: Sales Contact Email
+        type: email
+        required: true
+        placeholder: sales@yourcompany.com
+        hint: A group address for your sales team, not one person's inbox.
+        prompt_hint: Group email address; MISSING if not stated
+      - id: sales_contact_phone
+        label: Sales Contact Phone
+        type: tel
+        placeholder: 202-555-0123
+        pattern: "^[0-9]{3}-[0-9]{3}-[0-9]{4}$"
+        pattern_hint: Use the ###-###-#### format, e.g. 202-555-0123.
+        prompt_hint: "###-###-#### format; MISSING if not stated"
+      - repeat: other_contacts
+        label: Additional contact
+        add_label: Add a contact
+        min: 0
+        prompt: false
+        items:
+          - id: type
+            label: Contact Type
+            type: select
+            required: true
+            options: [Security, Sales, Primary, Technical]
+          - id: name
+            label: Name
+            type: text
+          - id: email
+            label: Email
+            type: email
+          - id: phone
+            label: Phone
+            type: tel
+            pattern: "^[0-9]{3}-[0-9]{3}-[0-9]{4}$"
+            pattern_hint: Use the ###-###-#### format, e.g. 202-555-0123.
+
+  - id: assessor
+    number: 4
+    title: Independent Assessor
+    step: CA-10
+    optional: true
+    items:
+      - id: assessment_used
+        label: Independent Assessment Used?
+        type: radio
+        options: ["Yes", "No"]
+      - id: assessor_name
+        label: Assessor Name
+        type: text
+        required_if: { field: assessment_used, equals: "Yes" }
+        show_if: { field: assessment_used, equals: "Yes" }
+      - id: assessor_id
+        label: Assessor FedRAMP ID
+        type: text
+        required_if: { field: assessment_used, equals: "Yes" }
+        show_if: { field: assessment_used, equals: "Yes" }
+        placeholder: e.g. 012345
+        pattern: "^[0-9]{6}$"
+        pattern_hint: Exactly 6 digits, e.g. 012345.
+      - id: assessment_date
+        label: Assessment Completion Date
+        type: date
+        show_if: { field: assessment_used, equals: "Yes" }
+
+  - id: services
+    number: 5
+    title: Certified Services
+    step: CA-06
+    optional: true
+    prompt: true
+    intro: List each service your customers use that this certification covers. Add as many as you need.
+    items:
+      - repeat: services
+        label: Service
+        add_label: Add a service
+        min: 1
+        prompt_label: "Service N"
+        items:
+          - id: name
+            label: Service Name
+            type: text
+            required: true
+            hint: As shown on your website.
+            prompt_hint: As shown on the website
+          - id: description
+            label: Service Description
+            type: textarea
+            required: true
+            hint: Markdown formatting supported.
+            prompt_hint: One to three sentences
+          - id: date_available
+            label: Date Available
+            type: date
+            required: true
+            prompt_hint: YYYY-MM-DD; MISSING if not stated
+          - id: security_category
+            label: Security Category
+            type: select
+            options: [Low, Moderate, High]
+            review: pending   # FIPS 199 levels; confirm the options Paramify wants here
+            hint: The FIPS 199 security category of the information this service handles.
+            prompt_hint: MISSING if not stated
+
+  - id: resources
+    number: 6
+    title: Information Resources
+    step: CA-10
+    items:
+      - id: resources_summary
+        label: Identified Resources Summary
+        type: textarea
+        required: true
+        rule: MAS-CSO-IIR
+      - id: explicit_exclusions
+        label: Explicit Exclusions
+        type: textarea
+        hint: Software you ship but don't operate, and anything else out of scope. See fedramp.gov/scope.
+      - repeat: info_resources
+        label: Information resource
+        add_label: Add a resource
+        min: 1
+        items:
+          - id: name
+            label: Resource Name
+            type: text
+            required: true
+          - id: type
+            label: Type
+            type: radio
+            required: true
+            options: [Machine-based, Non-machine-based]
+          - id: description
+            label: Description & Role
+            type: textarea
+            required: true
+          - id: handles_fcd
+            label: Handles Federal Customer Data?
+            type: radio
+            required: true
+            options: ["Yes", "No"]
+          - id: cia_impact
+            label: Impact on Confidentiality, Integrity, or Availability
+            type: textarea
+            required_if: { field: handles_fcd, equals: "No" }
+            hint: Required if the resource does not handle federal customer data.
+
+  - id: framework
+    number: 7
+    title: Alternative Security Framework
+    step: CA-10
+    items:
+      - id: framework_used
+        label: Framework Used
+        type: radio
+        required: true
+        default_from: path
+        options:
+          - { value: soc2, label: SOC 2 Type II }
+          - { value: rev5, label: "FedRAMP Rev5, including FedRAMP Ready, at any historical Impact Level" }
+          - { value: govramp, label: GovRAMP at any Impact Level }
+      # Added an example placeholder per framework, since SOC 2 has no impact level and first-timers didn't know what to enter. Draft until Paramify confirms.
+      - id: impact_scope
+        label: Impact Level / Scope
+        type: text
+        required: true
+        placeholder_by:
+          field: framework_used
+          values:
+            soc2: "e.g. Security and Availability; your production platform"
+            rev5: "e.g. Moderate"
+            govramp: "e.g. Moderate"
+      - id: date_completed
+        label: Date Completed
+        type: date
+        required: true
+        max_age_months: 12
+        hint: Must be within the past 12 months.
+      - id: certifying_body
+        label: Certifying / Auditing Body
+        type: text
+        required: true
+      - id: ia_included
+        label: Independent Assessment Included?
+        type: radio
+        required: true
+        options: ["Yes", "No", Not applicable]
+      - id: mapping_summary
+        label: Mapping to FedRAMP Rules
+        type: textarea
+        required: true
+        rule: FRC-CLA-MFR
+        hint: Summarize in enough detail that reviewers need not read the framework materials.
+      - heading: Materials
+      - id: soc2_report
+        label: Complete report
+        type: text
+        default: Please see Trust Center
+        show_if: { field: framework_used, equals: soc2 }
+      - id: soc2_bridge
+        label: Bridge or gap letter (if applicable)
+        type: text
+        default: Please see Trust Center
+        show_if: { field: framework_used, equals: soc2 }
+      - id: soc2_engagement
+        label: Verified audit engagement documentation
+        type: text
+        default: Please see Trust Center
+        show_if: { field: framework_used, equals: soc2 }
+      - id: soc2_schedule
+        label: Estimated schedule for upcoming report
+        type: text
+        show_if: { field: framework_used, equals: soc2 }
+      - id: soc2_supplemental
+        label: Supplemental compliance evidence (if applicable)
+        type: text
+        default: Please see Trust Center
+        show_if: { field: framework_used, equals: soc2 }
+      - id: ready_rar
+        label: "FedRAMP Ready: Readiness Assessment Report"
+        type: text
+        show_if: { field: framework_used, equals: rev5 }
+      - id: ready_sap
+        label: "FedRAMP Ready: Security Assessment Plan"
+        type: text
+        show_if: { field: framework_used, equals: rev5 }
+      - id: ready_other
+        label: Other materials required by FedRAMP
+        type: text
+        show_if: { field: framework_used, equals: rev5 }
+      - id: govramp_rar
+        label: "GovRAMP: Readiness Assessment Report"
+        type: text
+        show_if: { field: framework_used, equals: govramp }
+      - id: govramp_sap
+        label: "GovRAMP: Security Assessment Plan"
+        type: text
+        show_if: { field: framework_used, equals: govramp }
+      - id: govramp_other
+        label: Other materials required by GovRAMP
+        type: text
+        show_if: { field: framework_used, equals: govramp }
+
+  - id: third_party
+    number: 8
+    title: Third-Party Information Resources
+    step: CA-10
+    items:
+      - id: metadata_in_scope
+        label: Metadata Included in Scope
+        type: textarea
+        hint: MAS-CSO-MDI
+      - heading: FedRAMP Certified Resources
+      - repeat: certified_resources
+        label: Certified resource
+        add_label: Add a certified resource
+        min: 0
+        items:
+          - { id: fedramp_id, label: FedRAMP ID, type: text, required: true, hint: Unique FedRAMP package ID. }
+          - { id: use_case, label: Use Case, type: textarea, required: true, hint: How this resource is used. }
+          - { id: usage, label: Usage & Configuration, type: textarea, required: true, hint: How the resource is deployed and configured. }
+          - { id: justification, label: Justification for Use, type: textarea, required: true }
+          - { id: mitigation, label: Mitigation Measures, type: textarea, required: true, hint: To reduce potential impact to federal customer data. }
+          - { id: compensating, label: Compensating Controls, type: textarea, required: true, hint: To reduce potential impact to federal customer data. }
+          - { id: security_category, label: Security Category, type: select, options: [Low, Moderate, High], review: pending }
+      - heading: Non-FedRAMP Certified Resources
+      - repeat: noncertified_resources
+        label: Non-certified resource
+        add_label: Add a non-certified resource
+        min: 0
+        items:
+          - { id: name, label: Name, type: text, required: true }
+          - { id: provider, label: Provider, type: text, required: true }
+          - { id: website, label: Website, type: url, placeholder: "https://" }
+          - { id: use_case, label: Use Case, type: textarea, required: true, hint: How this resource is used. }
+          - { id: usage, label: Usage & Configuration, type: textarea, required: true, hint: How the resource is deployed and configured. }
+          - { id: justification, label: Justification for Use, type: textarea, required: true }
+          - { id: mitigation, label: Mitigation Measures, type: textarea, required: true, hint: To reduce potential impact to federal customer data. }
+          - { id: compensating, label: Compensating Controls, type: textarea, required: true, hint: To reduce potential impact to federal customer data. }
+
+  - id: summary
+    number: 9
+    title: Overall Summary of Assessment
+    step: CA-10
+    optional: true
+    items:
+      - { id: overall_summary, label: Overall Summary, type: textarea, hint: "As supplied by the assessor, without inappropriate modification." }
+      - { id: assessment_failures, label: Assessment Failures, type: textarea, hint: "List any, or enter None." }
+      - { id: areas_of_dispute, label: Areas of Dispute, type: textarea, hint: "List any, or enter None." }
+      - { id: full_results_location, label: Full Results Location, type: text }

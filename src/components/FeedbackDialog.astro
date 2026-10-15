@@ -1,0 +1,31 @@
+---
+import Icon from './Icon.astro';
+import { config, getPartner } from '../lib/site';
+const partner = await getPartner();
+---
+<dialog
+  id="feedback-dialog"
+  aria-labelledby="feedback-title"
+  data-subject-prefix={config.feedback.subject_prefix}
+  data-partner={partner.name}
+>
+  <div class="dialog-head">
+    <h2 id="feedback-title">Send feedback</h2>
+    <button type="button" class="icon-btn" data-dialog-close aria-label="Close feedback dialog"><Icon name="x" /></button>
+  </div>
+  <div class="dialog-body">
+    <p style="margin:0">Copy this block, open a Paramify support request, and paste it in. Add your company and your feedback.</p>
+    <label for="feedback-task">Task (optional)</label>
+    <select id="feedback-task" data-feedback-task>
+      <option value="">Whole step</option>
+    </select>
+    <label for="feedback-text">Message to paste</label>
+    <textarea id="feedback-text" data-feedback-text spellcheck="false"></textarea>
+    <div class="dialog-actions">
+      <button type="button" class="btn btn-primary" data-copy-from="feedback-text"><Icon name="copy" />Copy</button>
+      <a class="btn btn-secondary" href={config.feedback.zendesk_url} target="_blank" rel="noopener noreferrer">
+        <Icon name="external-link" />Open a support request<span class="sr-only"> (opens in a new tab)</span>
+      </a>
+    </div>
+  </div>
+</dialog>

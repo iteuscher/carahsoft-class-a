@@ -1,0 +1,58 @@
+---
+// CA-04: type names for each role (several per role, reuse across roles) plus partner and Paramify contacts.
+import { config, getPartner } from '../lib/site';
+import type { StepData } from '../lib/content';
+
+interface Props { roles: StepData['roles'] }
+const { roles } = Astro.props;
+const partner = await getPartner();
+const partnerLegend = partner.standalone ? 'Partner rep (if you work with one)' : `Your ${partner.name} rep`;
+---
+<section class="section" aria-labelledby="team-title">
+  <h2 id="team-title">Your team</h2>
+  <p class="section-intro">Type a name and press Enter or Add. Add several people to a role, or the same person to several roles.</p>
+  <datalist id="team-names"></datalist>
+  <div class="team-table" role="table" aria-label="Your team">
+    <div class="team-row team-head" role="row">
+      <span role="columnheader">Role</span><span role="columnheader">Owns</span><span role="columnheader">Names</span>
+    </div>
+    {roles.map((r) => (
+      <div class="team-row" role="row" data-team-role={r.id}>
+        <div role="rowheader"><strong>{r.id}</strong><span class="team-typical">Typically: {r.title}</span></div>
+        <div role="cell" class="team-owns">{r.owns}</div>
+        <div role="cell" class="team-names">
+          <ul class="name-chips" data-name-list aria-label={`Names for ${r.id}`} hidden></ul>
+          <div class="name-add">
+            <label class="sr-only" for={`team-input-${r.id}`}>Add a name for {r.id}</label>
+            <input id={`team-input-${r.id}`} type="text" list="team-names" autocomplete="off" placeholder="Type a name" data-name-input />
+            <button type="button" class="btn btn-secondary btn-sm" data-name-add>Add<span class="sr-only"> to {r.id}</span></button>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
+<section class="section" aria-labelledby="contacts-title">
+  <h2 id="contacts-title">Your partner and Paramify contacts</h2>
+  <p class="section-intro">Tasks owned by your partner or Paramify show these names.</p>
+  <div class="contact-grid">
+    <fieldset class="card contact-fields" data-contact="partner">
+      <legend>{partnerLegend}</legend>
+      <label class="ff-label" for="contact-partner-name">Name</label>
+      <input id="contact-partner-name" type="text" autocomplete="off" data-contact-field="name" />
+      <label class="ff-label" for="contact-partner-email">Email</label>
+      <input id="contact-partner-email" type="email" autocomplete="off" spellcheck="false" data-contact-field="email" />
+      <label class="ff-label" for="contact-partner-phone">Phone</label>
+      <input id="contact-partner-phone" type="tel" autocomplete="off" data-contact-field="phone" />
+    </fieldset>
+    <fieldset class="card contact-fields" data-contact="paramify">
+      <legend>Paramify</legend>
+      <label class="ff-label" for="contact-paramify-name">Name</label>
+      <input id="contact-paramify-name" type="text" autocomplete="off" data-contact-field="name" />
+      <label class="ff-label" for="contact-paramify-email">Email</label>
+      <input id="contact-paramify-email" type="email" autocomplete="off" spellcheck="false" data-contact-field="email" />
+      {config.paramify_contact?.email && <p class="ff-hint">Questions about Paramify or this walkthrough can go to {config.paramify_contact.email}.</p>}
+    </fieldset>
+  </div>
+</section>

@@ -1,0 +1,11 @@
+id: insight-assurance
+name: Insight Assurance
+standalone: false
+logo: https://insightassurance.com/wp-content/uploads/2025/02/Horizontal-Stacked-Full-Color.svg   # TODO: confirm usage, then self-host
+logo_on_dark: https://insightassurance.com/wp-content/uploads/2025/02/Horizontal-Stacked-White.svg
+intro: "[Draft] Insight Assurance is a global audit firm and accredited FedRAMP 3PAO, on a mission to transform how organizations achieve cybersecurity and compliance. Its team will guide you through this walkthrough and answer questions about how your SOC 2 maps to Class A."
+intro_source: "Confirm with Insight Assurance before launch."
+powered_by: true
+contact: { name: TODO, email: TODO, booking_url: TODO }
+theme:
+  primary: TODO

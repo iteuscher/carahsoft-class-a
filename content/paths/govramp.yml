@@ -1,0 +1,25 @@
+id: govramp
+label: GovRAMP
+inherits: soc2
+description: A GovRAMP assessment at any impact level, completed within the past 12 months.
+fedramp_rule:
+  id: FRC-CLA-EAM
+  text: "3. GovRAMP: Readiness Assessment Report, Security Assessment Plan, and any other materials required by GovRAMP."
+overrides:
+  CA-11.1: { text: "Confirm sharing terms for your GovRAMP materials", draft: true }
+  CA-11.7: { text: "Create an evidence set for your assessment materials, named for your assessment (for example, GovRAMP 2026)", draft: true }
+  CA-11.2: { text: "Upload your Readiness Assessment Report to your evidence set", done_when: "Uploaded" }
+  # CA-11.3 is optional on SOC 2 (bridge letter), but on GovRAMP it's the Security Assessment Plan, which is required.
+  CA-11.3: { text: "Upload your Security Assessment Plan", done_when: "Uploaded", optional: false }
+  # Same fix as CA-11.3: there's nowhere to "mark not applicable", so check the box instead.
+  CA-11.4: { text: "Upload any other materials required by GovRAMP", done_when: "Uploaded, or you've confirmed you don't need any. If you don't, just check this box." }
+  CA-17.7: { text: "Keep your GovRAMP status current", draft: true }
+hide: [CA-11.5, CA-11.6]
+ksi_gap_column: related_controls   # in CA-13, show each KSI's related SP 800-53 controls instead of the SOC 2 gap column
+audit_template: |
+  Plan: NIST 800-53 control ID; implementation statement (quoted) ""
+  Method: assessment method (quoted) ""
+  Result: assessment result (quoted) ""; document and page
+  User: who completed this note
+  Status: Complete
+  Gap against this KSI: None | <describe> -> Evidence set: <name>

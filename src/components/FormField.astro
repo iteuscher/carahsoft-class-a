@@ -1,0 +1,108 @@
+---
+// One CPO form field. `bind="top"` saves to the form's top-level values; `bind="repeat"` is a field
+// inside a repeatable item (ids contain __i__, filled in by the browser when an item is added).
+import { optLabel, optValue, type Field } from '../lib/form-logic';
+import { rule } from '../lib/site';
+
+interface Props {
+  field: Field;
+  idBase: string;
+  bind: 'top' | 'repeat';
+  label?: string;
+  placeholder?: string;
+  /** Inside a task: no "Added in" chip. */
+  inline?: boolean;
+}
+const { field: f, idBase, bind, label = f.label, placeholder = f.placeholder, inline = false } = Astro.props;
+const bindAttr = bind === 'top' ? { 'data-cpo-field': f.id } : { 'data-rfield': f.id };
+const hintId = `${idBase}-hint`;
+const errId = `${idBase}-err`;
+const describedBy = [f.hint || f.rule || f.required_if ? hintId : '', errId].filter(Boolean).join(' ');
+const r = f.rule ? rule(f.rule) : null;
+const isGroup = f.type === 'radio' || f.type === 'checkboxes';
+const inputType = { text: 'text', url: 'url', email: 'email', tel: 'tel', date: 'date' }[f.type as string];
+const autocomplete = f.type === 'email' ? 'email' : f.type === 'tel' ? 'tel' : 'off';
+const condAttrs = f.show_if ? { 'data-show-field': f.show_if.field, 'data-show-equals': f.show_if.equals } : {};
+const reqIfAttrs = f.required_if ? { 'data-req-field': f.required_if.field, 'data-req-equals': f.required_if.equals } : {};
+const hint = (
+  [f.hint, f.required_if ? `Required if ${f.required_if.field.replace(/_/g, ' ')} is ${f.required_if.equals}.` : '']
+    .filter(Boolean)
+    .join(' ')
+);
+---
+<div class:list={['ff', isGroup && 'ff-group', f.review === 'pending' && 'is-draft no-marker']} data-ff={f.id} {...condAttrs} {...reqIfAttrs}>
+  {f.type === 'fixed' ? (
+    <>
+      <span class="ff-label" id={`${idBase}-label`}>{label}</span>
+      <p class="ff-fixed" aria-labelledby={`${idBase}-label`}>{f.default}</p>
+    </>
+  ) : isGroup ? (
+    <fieldset aria-describedby={describedBy || undefined}>
+      <legend class="ff-label">
+        {label}{f.required && <span class="req" aria-hidden="true"> *</span>}{f.required && <span class="sr-only"> (required)</span>}
+        {f.later && !inline && <span class="chip ff-later">Added in {f.later}</span>}
+        {f.review === 'pending' && <span class="chip chip-draft draft-chip">Pending review</span>}
+      </legend>
+      {(hint || r) && (
+        <p class="ff-hint" id={hintId}>{hint}{r && <> Rule: <a class="id-link" href={r.url} target="_blank" rel="noopener noreferrer">{r.id}<span class="sr-only"> (opens in a new tab)</span></a></>}</p>
+      )}
+      <div class:list={['ff-options', (f.options?.length ?? 0) > 8 && 'ff-options-cols']}>
+        {f.options!.map((o, i) => (
+          <label class="ff-option">
+            <input
+              type={f.type === 'radio' ? 'radio' : 'checkbox'}
+              name={idBase}
+              id={`${idBase}-${i}`}
+              value={optValue(o)}
+              {...bindAttr}
+            />
+            <span>{optLabel(o)}</span>
+          </label>
+        ))}
+      </div>
+      {f.max && <p class="ff-hint" data-max-note={f.max} aria-live="polite"></p>}
+    </fieldset>
+  ) : (
+    <>
+      <label class="ff-label" for={idBase}>
+        {label}{f.required && <span class="req" aria-hidden="true"> *</span>}{f.required && <span class="sr-only"> (required)</span>}
+        {f.required_if && <span class="req" aria-hidden="true" data-req-mark hidden> *</span>}
+        {f.later && !inline && <span class="chip ff-later">Added in {f.later}</span>}
+        {f.review === 'pending' && <span class="chip chip-draft draft-chip">Pending review</span>}
+      </label>
+      {(hint || r) && (
+        <p class="ff-hint" id={hintId}>{hint}{r && <> Rule: <a class="id-link" href={r.url} target="_blank" rel="noopener noreferrer">{r.id}<span class="sr-only"> (opens in a new tab)</span></a></>}</p>
+      )}
+      {f.type === 'textarea' ? (
+        <textarea id={idBase} rows="4" aria-describedby={describedBy || undefined} {...bindAttr} placeholder={placeholder}></textarea>
+      ) : f.type === 'select' ? (
+        <select id={idBase} aria-describedby={describedBy || undefined} {...bindAttr}>
+          <option value="">Choose…</option>
+          {f.options!.map((o) => <option value={optValue(o)}>{optLabel(o)}</option>)}
+        </select>
+      ) : (
+        <input
+          id={idBase}
+          type={inputType}
+          inputmode={f.type === 'tel' ? 'tel' : undefined}
+          autocomplete={autocomplete}
+          spellcheck={f.type === 'text' || f.type === 'textarea' ? undefined : 'false'}
+          placeholder={placeholder}
+          aria-describedby={describedBy || undefined}
+          {...bindAttr}
+        />
+      )}
+      {f.preview && (
+        <div class="logo-preview" data-logo-preview hidden>
+          <span class="ff-hint">Preview on white and on grey. Your logo should be visible on both.</span>
+          <div class="logo-preview-row">
+            <span class="logo-tile"><img alt="Preview of your logo on white" data-preview-img /></span>
+            <span class="logo-tile logo-tile-grey"><img alt="Preview of your logo on grey" data-preview-img /></span>
+          </div>
+          <p class="ff-error" data-preview-error hidden>That link didn't load as an image. Check that it points to the image file itself.</p>
+        </div>
+      )}
+    </>
+  )}
+  <p class="ff-error" id={errId} data-ff-error hidden></p>
+</div>

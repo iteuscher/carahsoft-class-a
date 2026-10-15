@@ -1,0 +1,40 @@
+Name,Description,Risks,Risk Solutions,ExportVersion=1.0
+FedRAMP 20x classA,"[{""type"":""p"",""children"":[{""text"":""""}]}]","User Configured {End User}
+User Provided {End User}
+Cloud Security {InfoSec}
+Identity and Access {InfoSec}
+Security Operations {InfoSec}
+Vulnerability Management {InfoSec}
+Communication Tools {Organization}
+Risk Management {Organization}
+Threat Awareness {Organization}
+Application Delivery {TechOps}
+Data Protection {TechOps}
+Hosting {TechOps}","Authentication Method
+Change Management Process
+Configuration Management Plan
+Contingency Plan
+Continuous Monitoring Process
+Core Application
+Cryptographic Module Review Process
+Data Encryption at Rest
+Data Encryption in Transit
+Data Inventory Process
+Digital Forensics and Incident Response (DFIR)
+Document Management Process
+Incident Response Plan
+Incident Response Process
+Infrastructure Scanning
+Logical Access Certification Process
+Patch Management Process
+Penetration Testing Process
+Security Authorization Process
+Security Awareness Training Process
+Security Monitoring Process
+Security Risk Assessment Process
+Software Development Life Cycle Process
+System Security Plan
+Trust Center
+Vendor Risk Management Process
+Vulnerability Management Process
+Workspace Settings",

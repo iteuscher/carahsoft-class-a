@@ -1,0 +1,55 @@
+---
+import Icon from './Icon.astro';
+import type { StepData } from '../lib/content';
+
+interface Props { resources: StepData['resources']; headingLevel?: 2 | 3 }
+const { resources } = Astro.props;
+
+const TYPES: Record<string, { icon: string; label: string }> = {
+  blog: { icon: 'newspaper', label: 'Paramify blog' },
+  video: { icon: 'square-play', label: 'Video' },
+  help: { icon: 'life-buoy', label: 'Paramify help article' },
+  fedramp: { icon: 'landmark', label: 'FedRAMP' },
+  form: { icon: 'file-text', label: 'Form' },
+  trust: { icon: 'shield-check', label: 'Paramify trust center' },
+};
+
+// YouTube links embed privacy-enhanced (no cookies until play).
+function youtubeId(url: string): string | null {
+  const u = new URL(url);
+  if (u.hostname === 'youtu.be') return u.pathname.slice(1) || null;
+  if (u.hostname.endsWith('youtube.com')) return u.searchParams.get('v');
+  return null;
+}
+---
+<section class="section" aria-labelledby="resources-title">
+  <h2 id="resources-title">Resources</h2>
+  <ul class="resource-list">
+    {resources.map((r) => {
+      const t = TYPES[r.type];
+      const yt = r.type === 'video' ? youtubeId(r.url) : null;
+      return (
+        <li class:list={['resource', yt && 'resource-video']}>
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span class="resource-icon"><Icon name={t.icon} /></span>
+            <span>
+              <span class="resource-type">{t.label}</span>
+              <a href={r.url} target="_blank" rel="noopener noreferrer">{r.title}<span class="sr-only"> (opens in a new tab)</span></a>
+            </span>
+          </div>
+          {yt && (
+            <iframe
+              class="video"
+              src={`https://www.youtube-nocookie.com/embed/${yt}`}
+              title={`Video: ${r.title}`}
+              loading="lazy"
+              allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen
+            ></iframe>
+          )}
+        </li>
+      );
+    })}
+  </ul>
+</section>

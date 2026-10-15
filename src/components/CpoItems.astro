@@ -1,0 +1,28 @@
+---
+// Renders a run of CPO form items (fields, subheadings, repeats). Split out of CpoForm so a
+// section's "fill in later" fields can render inside their own expandable group.
+import FormField from './FormField.astro';
+import { isField, isHeading, isRepeat, type Section } from '../lib/form-logic';
+
+interface Props { items: Section['items'] }
+const { items } = Astro.props;
+---
+{items.map((item) =>
+  isHeading(item) ? (
+    <h4 class="cpo-subhead">{item.heading}</h4>
+  ) : isField(item) ? (
+    <FormField field={item} idBase={`cpo-${item.id}`} bind="top" />
+  ) : isRepeat(item) ? (
+    <div class="repeat" data-repeat={item.repeat} data-repeat-min={item.min} data-repeat-label={item.label}>
+      <div class="repeat-items" data-repeat-items></div>
+      <template data-repeat-template>
+        <fieldset class="repeat-item" data-repeat-index="__i__">
+          <legend class="repeat-legend">{item.label} __n__</legend>
+          {item.items.map((f) => <FormField field={f} idBase={`cpo-${item.repeat}-__i__-${f.id}`} bind="repeat" />)}
+          <button type="button" class="btn btn-ghost btn-sm repeat-remove" data-repeat-remove aria-label={`Remove ${item.label.toLowerCase()} __n__`}>Remove</button>
+        </fieldset>
+      </template>
+      <button type="button" class="btn btn-secondary btn-sm" data-repeat-add>{item.add_label}</button>
+    </div>
+  ) : null,
+)}

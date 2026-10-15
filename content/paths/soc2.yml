@@ -1,0 +1,4 @@
+id: soc2
+label: SOC 2 Type II
+default: true
+description: A SOC 2 Type II report completed within the past 12 months.

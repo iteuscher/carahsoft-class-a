@@ -1,0 +1,8 @@
+id: paramify
+name: Paramify
+standalone: true            # no partner intro; CA-02 shows only the Paramify section
+logo: /brand/paramify-logo-blue-trimmed.png   # trimmed copy of paramify-logo-blue-horizontal.png (no padding)
+logo_on_dark: null          # TODO: white lockup if the hero uses Sean Blue
+powered_by: false           # the standalone site is Paramify's own
+contact: { name: TODO, email: TODO, booking_url: TODO }
+theme: {}                   # empty = Paramify tokens as-is

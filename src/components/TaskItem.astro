@@ -1,0 +1,135 @@
+---
+import Icon from './Icon.astro';
+import FormField from './FormField.astro';
+import { inlineText, type RenderContext } from '../lib/markdown';
+import { resolveKey, rule } from '../lib/site';
+import { loadSite, type ResolvedItem } from '../lib/content';
+import { cpoField } from '../lib/form';
+
+interface Props {
+  item: ResolvedItem;
+  ctx: Pick<RenderContext, 'stepIds' | 'taskIds'>;
+  checkable?: boolean;
+  showAhead?: boolean;
+  /** The step's choice id, when this task is one platform's variant. */
+  choiceId?: string;
+}
+const { item, ctx, checkable = true, showAhead = true, choiceId } = Astro.props;
+const raw = item.raw as any;
+const id = item.id;
+const allDraft = item.variants.length > 0 && item.variants.every((v) => v.draft);
+const multi = item.variants.length > 1;
+const VARIANTS: Record<string, string> = { google: 'Google Workspace', microsoft: 'Microsoft 365' };
+
+const actions: { url: string | null; label: string; comingSoon: string }[] = [];
+// link_label names the button (e.g. a support article); falls back to "Open link".
+if (raw.link) actions.push({ url: raw.link, label: raw.link_label ?? 'Open link', comingSoon: '' });
+if (raw.link_key) {
+  const r = resolveKey(raw.link_key);
+  actions.push({ url: r.url, label: r.label, comingSoon: r.kind === 'template' ? 'Template coming soon' : 'Link coming soon' });
+}
+if (raw.template) {
+  const r = resolveKey(`templates.${raw.template}`);
+  actions.push({ url: r.url, label: r.label, comingSoon: 'Template coming soon' });
+}
+const rules = (raw.rules ?? []).map((r: string) => rule(r));
+const vAttr = (paths: string[]) => (multi ? paths.join(' ') : undefined);
+const auto = Boolean(raw.complete_when);
+const inputs = await Promise.all((raw.inputs ?? []).map(async (i: any) => ({ ...i, def: await cpoField(i.field) })));
+const site = raw.widget === 'path_choice' ? await loadSite() : null;
+const variantAttrs = raw.variant && choiceId ? { 'data-choice': choiceId, 'data-variant': raw.variant } : {};
+---
+<li
+  class:list={['task', allDraft && 'is-draft']}
+  id={`task-${id}`}
+  data-task-id={id}
+  data-paths={item.visiblePaths.join(' ')}
+  data-roles={item.role.join(' ')}
+  data-added={raw.added}
+  {...variantAttrs}
+>
+  {checkable && <input type="checkbox" id={`cb-${id}`} data-task={id} aria-describedby={raw.help ? `help-${id} dw-${id}` : `dw-${id}`} disabled={auto} data-auto={auto ? '' : undefined} />}
+  <div class="task-body">
+    <div class="task-head">
+      <span class="task-id">{id}</span>
+      {checkable ? (
+        <label class="task-text" for={`cb-${id}`}>
+          {item.variants.map((v) => (
+            <span data-paths={vAttr(v.paths)} class:list={[!allDraft && v.draft && 'is-draft']} set:html={inlineText(v.text, ctx)} />
+          ))}
+          {auto && <span class="sr-only"> (checks itself)</span>}
+        </label>
+      ) : (
+        <span class="task-text" style="cursor:auto">
+          {item.variants.map((v) => (
+            <span data-paths={vAttr(v.paths)} class:list={[!allDraft && v.draft && 'is-draft']} set:html={inlineText(v.text, ctx)} />
+          ))}
+        </span>
+      )}
+      {auto && <span class="chip chip-info">Checks itself</span>}
+      {/* Optional chip per path wording, since a path can make an optional task required. */}
+      {item.variants.filter((v) => v.optional).map((v) => <span class="chip chip-info" data-paths={vAttr(v.paths)}>Optional</span>)}
+      <span class="chip chip-new new-chip" data-new-chip hidden>New</span>
+      {allDraft && <span class="chip chip-draft draft-chip">{item.pending ? 'Pending review' : 'Draft'}</span>}
+    </div>
+    {/* The help line sits above "Done when" in the same small style, so pointers don't read like part of the task. */}
+    {raw.help && <p class="task-done-when task-help" id={`help-${id}`} set:html={inlineText(raw.help, ctx)} />}
+    {raw.done_when !== undefined && (
+      <p class="task-done-when" id={`dw-${id}`}>
+        <b>Done when:</b>{' '}
+        {item.variants.map((v) => <span data-paths={vAttr(v.paths)} set:html={inlineText(v.done_when ?? '', ctx)} />)}
+      </p>
+    )}
+    {raw.cadence && (
+      <p class="task-done-when"><b>When:</b> <span set:html={inlineText(raw.cadence, ctx)} /></p>
+    )}
+    <div class="task-meta">
+      {/* Unowned draft tasks say so instead of showing no owner at all. */}
+      {item.role.length === 0 && <span class="chip chip-role">Owner TBD</span>}
+      {item.role.map((r) => <span class="chip chip-role" data-role-chip={r}><span class="sr-only" data-role-sr>Role: </span><span data-role-text>{r}</span></span>)}
+      {showAhead && raw.ahead && <span class="chip chip-ahead">Do ahead</span>}
+      {raw.lead_time && <span class="chip chip-info"><Icon name="clock" />Lead time: {raw.lead_time}</span>}
+      {raw.variant && <span class="chip">{VARIANTS[raw.variant]}</span>}
+      {rules.map((r: any) => (
+        <a class="rule-chip" href={r.url} title={r.name} target="_blank" rel="noopener noreferrer">
+          <span class="sr-only">FedRAMP rule </span>{r.id}<span class="sr-only"> ({r.name}, opens in a new tab)</span>
+        </a>
+      ))}
+      {raw.source && <span class="task-source">Source: {raw.source}</span>}
+    </div>
+    {site && (
+      <fieldset class="path-choice">
+        <legend class="sr-only">Your path</legend>
+        {site.paths.map((p) => (
+          <label class="path-option">
+            <input type="radio" name="path-choice" value={p.id} data-path-choice />
+            <span><strong>{p.label}</strong><span class="path-desc">{p.description}</span></span>
+          </label>
+        ))}
+      </fieldset>
+    )}
+    {inputs.length > 0 && (
+      <div class="task-inputs">
+        {inputs.map((i: any) => (
+          <FormField field={i.def} idBase={`task-${id}-${i.field}`} bind="top" label={i.label} placeholder={i.placeholder} inline />
+        ))}
+      </div>
+    )}
+    {actions.length > 0 && (
+      <div class="task-actions">
+        {/* Files the site hosts (e.g. the Class A .csv exports) download instead of opening a new tab. */}
+        {actions.map((a) => a.url && /\.(csv|xlsx|docx|json|txt)$/i.test(a.url) && !/^https?:/.test(a.url) ? (
+          <a class="btn btn-secondary btn-sm" href={a.url} download>
+            <Icon name="file-down" />{a.label}
+          </a>
+        ) : a.url ? (
+          <a class="btn btn-secondary btn-sm" href={a.url} target="_blank" rel="noopener noreferrer">
+            <Icon name="external-link" />{a.label}<span class="sr-only"> (opens in a new tab)</span>
+          </a>
+        ) : (
+          <button type="button" class="btn btn-secondary btn-sm" disabled>{a.comingSoon}</button>
+        ))}
+      </div>
+    )}
+  </div>
+</li>
